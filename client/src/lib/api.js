@@ -41,4 +41,10 @@ export const api = {
     form.append('file', file);
     return request('/api/upload', { method: 'POST', body: form, isForm: true });
   },
+  ghibliStatus: () => request('/api/ghibli/status'),
+  ghibli: (file) => {
+    const form = new FormData();
+    form.append('image', file);
+    return request('/api/ghibli', { method: 'POST', body: form, isForm: true });
+  },
 };

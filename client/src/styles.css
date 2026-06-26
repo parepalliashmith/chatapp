@@ -246,6 +246,27 @@ a { color: var(--accent); cursor: pointer; text-decoration: none; }
 .search-time { float: right; font-size: 11px; color: var(--text-dim); font-weight: 400; }
 mark { background: var(--accent); color: #03110d; border-radius: 3px; padding: 0 2px; }
 
+/* ---------- ghibli art modal ---------- */
+.ghibli-stage { margin: 12px 0; }
+.ghibli-drop {
+  width: 100%; padding: 32px 16px; border: 2px dashed var(--panel-3); border-radius: 14px;
+  background: var(--panel-2); color: var(--text-dim); display: flex; flex-direction: column;
+  align-items: center; gap: 10px; font-size: 14px;
+}
+.ghibli-drop:hover { border-color: var(--accent); color: var(--text); }
+.ghibli-drop-ico { font-size: 40px; }
+.ghibli-imgs { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.ghibli-imgs figure { margin: 0; flex: 1; min-width: 130px; max-width: 220px; text-align: center; }
+.ghibli-imgs img { width: 100%; border-radius: 12px; aspect-ratio: 1; object-fit: cover; background: #000; }
+.ghibli-imgs figcaption { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+.ghibli-loading { display: grid; place-items: center; min-height: 130px; gap: 12px; }
+.spinner {
+  width: 36px; height: 36px; border: 4px solid var(--panel-3); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ghibli-actions { display: flex; flex-direction: column; gap: 0; }
+
 /* ---------- camera test (profile) ---------- */
 .cam-test { margin-top: 8px; }
 .cam-hint { margin: 0 0 10px; font-size: 13px; color: var(--text-dim); }

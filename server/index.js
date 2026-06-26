@@ -42,6 +42,9 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+// In-memory upload for images we forward straight to the OpenAI image API.
+const memUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 
 // ---------- helpers ----------
 function publicUser(u) {
@@ -239,6 +242,52 @@ app.post('/api/upload', authMiddleware, upload.single('file'), (req, res) => {
     mime: req.file.mimetype,
     size: req.file.size,
   });
+});
+
+// Is the Ghibli feature available (i.e. is an API key configured)?
+app.get('/api/ghibli/status', authMiddleware, (_req, res) => {
+  res.json({ enabled: !!OPENAI_API_KEY });
+});
+
+// Turn an uploaded photo into Studio Ghibli–style art via OpenAI gpt-image-1.
+app.post('/api/ghibli', authMiddleware, memUpload.single('image'), async (req, res) => {
+  if (!OPENAI_API_KEY) {
+    return res.status(503).json({ error: 'Ghibli art is not configured yet — set OPENAI_API_KEY on the server.' });
+  }
+  if (!req.file) return res.status(400).json({ error: 'Please choose a photo first.' });
+
+  const prompt =
+    'Redraw this photo as a beautiful Studio Ghibli style anime illustration: soft hand-painted ' +
+    'watercolor textures, warm cinematic lighting, lush detailed painterly background, gentle ' +
+    'expressive features, whimsical and nostalgic mood. Preserve the subject, pose and composition.';
+
+  try {
+    const form = new FormData();
+    form.append('model', 'gpt-image-1');
+    form.append('image', new Blob([req.file.buffer], { type: req.file.mimetype || 'image/png' }), 'input.png');
+    form.append('prompt', prompt);
+    form.append('size', '1024x1024');
+
+    const r = await fetch('https://api.openai.com/v1/images/edits', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+      body: form,
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      const msg = data?.error?.message || `Image generation failed (${r.status})`;
+      return res.status(502).json({ error: msg });
+    }
+    const b64 = data?.data?.[0]?.b64_json;
+    if (!b64) return res.status(502).json({ error: 'No image was returned.' });
+
+    const buf = Buffer.from(b64, 'base64');
+    const filename = `ghibli-${Date.now()}-${nanoid(8)}.png`;
+    fs.writeFileSync(path.join(UPLOAD_DIR, filename), buf);
+    res.json({ url: `/uploads/${filename}`, name: 'ghibli-art.png', mime: 'image/png', size: buf.length, kind: 'image' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, storage: storageMode() }));

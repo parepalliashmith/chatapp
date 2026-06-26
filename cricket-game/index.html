@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Super Sixes Cricket 3D</title>
+<style>
+  :root{ --gold:#ffce3a; --line:#1f4d30; --card:#0f2417; --bad:#ff5b5b; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; height:100%;}
+  body{font-family:"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+    background:radial-gradient(120% 90% at 50% 0%, #16361f 0%, #0a1f12 55%, #07150c 100%);
+    color:#eafff0; display:flex; align-items:center; justify-content:center; min-height:100%; padding:14px;}
+  #app{width:100%; max-width:480px;}
+  .screen{display:none; animation:fade .35s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(8px);} to{opacity:1;}}
+  .logo{text-align:center; margin:8px 0 16px;}
+  .logo h1{margin:0; font-size:30px; letter-spacing:1px; line-height:1.05;
+    background:linear-gradient(180deg,#fff,var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 4px 18px rgba(255,206,58,.25);}
+  .logo .tag{display:inline-block; margin-top:8px; font-size:11px; letter-spacing:3px; color:#0c1f12;
+    background:var(--gold); padding:3px 10px; border-radius:20px; font-weight:800;}
+  .card{background:linear-gradient(180deg,var(--card),#0a1c12); border:1px solid var(--line);
+    border-radius:18px; padding:16px; box-shadow:0 18px 40px rgba(0,0,0,.45);}
+  .label{font-size:12px; text-transform:uppercase; letter-spacing:2px; color:#7fc497; margin:14px 0 7px;}
+  .label:first-child{margin-top:0;}
+  .grid{display:grid; gap:8px;} .grid.c3{grid-template-columns:repeat(3,1fr);} .grid.c2{grid-template-columns:repeat(2,1fr);}
+  .chip{border:1px solid var(--line); background:#0c2114; color:#dff7e6; border-radius:12px; padding:10px 8px;
+    font-size:14px; font-weight:600; cursor:pointer; text-align:center; transition:.15s; user-select:none;}
+  .chip:hover{border-color:#2f7a48;}
+  .chip.sel{background:linear-gradient(180deg,#1f7a3c,#15602e); border-color:var(--gold); color:#fff; box-shadow:0 0 0 2px rgba(255,206,58,.25) inset;}
+  select,input{width:100%; background:#0c2114; color:#eafff0; border:1px solid var(--line); border-radius:10px;
+    padding:11px; font-size:15px; font-family:inherit;}
+  input::placeholder{color:#5e8a6f;}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .btn{display:block; width:100%; border:none; cursor:pointer; margin-top:16px;
+    background:linear-gradient(180deg,#ffd84a,#f5a623); color:#231400; font-size:18px; font-weight:800;
+    letter-spacing:1px; padding:15px; border-radius:14px; box-shadow:0 10px 24px rgba(245,166,35,.35); transition:transform .08s;}
+  .btn:active{transform:translateY(2px);}
+  .btn.ghost{background:#10301c; color:#cdeed8; border:1px solid var(--line); box-shadow:none;}
+  .langRow{display:flex; align-items:center; gap:8px; justify-content:space-between; margin-top:12px;}
+  .toggle{display:flex; gap:8px; align-items:center; font-size:14px; color:#bfeccf;}
+  .switch{position:relative; width:42px; height:24px; background:#143; border-radius:20px; cursor:pointer; border:1px solid var(--line); flex:0 0 auto;}
+  .switch i{position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#cdeed8; transition:.2s;}
+  .switch.on{background:#1f7a3c;} .switch.on i{left:21px; background:#fff;}
+  .board{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .board .who{font-size:12px; color:#9fd9b3; letter-spacing:1px;}
+  .board .score{font-size:26px; font-weight:800; color:#fff;}
+  .target{font-size:13px; color:var(--gold); text-align:center; margin-bottom:8px; min-height:18px;}
+  #stage{position:relative; height:300px; border-radius:16px; overflow:hidden; border:1px solid #2c8a48; background:#7ec8ef;}
+  #stage canvas{display:block; width:100%; height:100%;}
+  .flash{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:54px; font-weight:900; letter-spacing:2px; pointer-events:none; opacity:0; text-align:center;}
+  .flash.six{color:var(--gold); text-shadow:0 0 22px rgba(0,0,0,.6),0 0 22px rgba(255,206,58,.7);}
+  .flash.four{color:#7ee0ff; text-shadow:0 0 22px rgba(0,0,0,.6),0 0 22px rgba(58,160,255,.8);}
+  .flash.out{color:#ff6a6a; text-shadow:0 0 22px rgba(0,0,0,.6),0 0 22px rgba(255,80,80,.8);}
+  @keyframes pop{0%{opacity:0; transform:scale(.4);}25%{opacity:1; transform:scale(1.15);}75%{opacity:1; transform:scale(1);}100%{opacity:0; transform:scale(1.4);}}
+  .flash.show{animation:pop 1.05s ease forwards;}
+  .timing{position:absolute; left:0; right:0; bottom:8px; text-align:center; pointer-events:none;}
+  .timing b{display:inline-block; background:rgba(0,0,0,.45); color:#fff; font-size:11px; letter-spacing:1px; padding:4px 10px; border-radius:20px;}
+  .nameplate{position:absolute; top:8px; left:8px; background:rgba(0,0,0,.4); color:#fff; font-size:11px; letter-spacing:1px; padding:4px 9px; border-radius:8px;}
+  #minimap{position:absolute; right:8px; bottom:8px; width:92px; height:92px; background:rgba(4,20,10,.55); border:1px solid rgba(255,255,255,.25); border-radius:50%;}
+  .balls{display:flex; gap:5px; justify-content:center; margin-top:10px; flex-wrap:wrap;}
+  .bx{width:24px; height:24px; border-radius:50%; background:#0c2114; border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#cdeed8;}
+  .bx.r{background:#15602e; color:#fff;} .bx.b{background:#3a2f12;} .bx.w{background:#5a1717; color:#ffcaca;}
+  .bx.six{background:#caa318; color:#1a1400;} .bx.four{background:#1f6fb0; color:#fff;}
+  .shots{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px;}
+  .shotBtn{border:none; border-radius:14px; padding:14px 6px; font-weight:800; font-size:15px; cursor:pointer; color:#06160c; transition:transform .07s; line-height:1.1;}
+  .shotBtn small{display:block; font-size:10px; font-weight:600; opacity:.7; margin-top:3px;}
+  .shotBtn:active{transform:translateY(2px);}
+  .shotBtn.defend{background:linear-gradient(180deg,#bfe9c9,#8fd0a3);}
+  .shotBtn.drive{background:linear-gradient(180deg,#9fe0ff,#5fb6ee); color:#04223a;}
+  .shotBtn.loft{background:linear-gradient(180deg,#ffd76a,#f3a83a);}
+  .shotBtn:disabled{opacity:.4; cursor:not-allowed;}
+  .hint{text-align:center; color:#8fc7a3; font-size:12px; margin-top:10px; min-height:16px;}
+  .comm{margin-top:12px; min-height:54px; background:#0b1f13; border:1px solid var(--line); border-radius:12px; padding:10px 12px; font-size:15px; line-height:1.45;}
+  .comm small{color:#7fc497; display:block; font-size:11px; letter-spacing:1px; margin-bottom:3px; text-transform:uppercase;}
+  .result h2{text-align:center; font-size:26px; margin:6px 0 2px;}
+  .result .sub{text-align:center; color:#9fd9b3; margin-bottom:14px;}
+  .foot{text-align:center; color:#5e8a6f; font-size:11px; margin-top:14px;}
+  .loading{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#0c1f12; font-weight:700; background:#7ec8ef;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- START -->
+  <section id="scrStart" class="screen active">
+    <div class="logo"><h1>SUPER SIXES<br>CRICKET</h1><div class="tag">3D EDITION</div></div>
+    <div class="card">
+      <p class="label">Your team</p>
+      <div class="two">
+        <select id="teamA"></select>
+        <input id="batName" placeholder="Your batter's name" maxlength="14" />
+      </div>
+      <p class="label">Opponent</p>
+      <select id="teamB"></select>
+
+      <p class="label">Commentary language</p>
+      <div class="grid c3" id="langGrid"></div>
+
+      <p class="label">Match length</p>
+      <div class="grid c3" id="oversGrid"></div>
+
+      <div class="langRow"><div class="toggle">🌙 Night match (floodlights)</div><div class="switch" id="nightSwitch"><i></i></div></div>
+      <div class="langRow"><div class="toggle">🔊 Voice commentary</div><div class="switch on" id="voiceSwitch"><i></i></div></div>
+
+      <p class="label">All-language voice (optional)</p>
+      <input id="ttsKey" type="password" placeholder="Google Cloud TTS API key — paste for all 6 voices" autocomplete="off" />
+      <p style="font-size:11px;color:#7fc497;margin:6px 2px 0;line-height:1.4;">Leave blank to use your device's built-in voice (only speaks languages whose Windows voice pack is installed). Paste a free Google Cloud Text-to-Speech key to hear <b>all 6 languages</b> with no installs. Key stays only on this device.</p>
+
+      <button class="btn" id="startBtn">START MATCH ▸</button>
+    </div>
+    <p class="foot">Original game · type any team/player names you like.</p>
+  </section>
+
+  <!-- GAME -->
+  <section id="scrGame" class="screen">
+    <div class="card">
+      <div class="board">
+        <div><div class="who" id="whoLbl">BATTING</div><div class="score"><span id="runs">0</span>/<span id="wkts">0</span></div></div>
+        <div style="text-align:right;"><div class="who">OVERS</div><div class="score" id="overTxt">0.0</div></div>
+      </div>
+      <div class="target" id="targetTxt"></div>
+      <div id="stage">
+        <div class="loading" id="loading">Building 3D stadium…</div>
+        <div class="nameplate" id="nameplate"></div>
+        <div class="flash" id="flash"></div>
+        <div class="timing"><b id="timingTxt"></b></div>
+        <svg id="minimap" viewBox="0 0 100 100" aria-label="field map"></svg>
+      </div>
+      <div class="balls" id="ballStrip"></div>
+      <div class="shots">
+        <button class="shotBtn defend" data-shot="defend">DEFEND<small>safe · 0–1</small></button>
+        <button class="shotBtn drive"  data-shot="drive">DRIVE<small>balanced · 1–4</small></button>
+        <button class="shotBtn loft"   data-shot="loft">LOFT<small>risky · 4–6</small></button>
+      </div>
+      <p class="hint" id="hint">Tap a shot as the ball reaches the bat.</p>
+      <div class="comm" id="comm"><small id="commTag">Commentary</small><span id="commTxt">Let's play!</span></div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="scrResult" class="screen">
+    <div class="card result">
+      <h2 id="resTitle">—</h2><p class="sub" id="resSub">—</p>
+      <div class="comm" id="resComm"><small>Commentary</small><span id="resCommTxt"></span></div>
+      <button class="btn" id="againBtn" style="margin-top:18px;">PLAY AGAIN ▸</button>
+      <button class="btn ghost" id="homeBtn">CHANGE SETTINGS</button>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
+<script>
+/* ============ SUPER SIXES CRICKET 3D ============ */
+const LANGS=[{key:'en',name:'English',code:'en-IN'},{key:'te',name:'తెలుగు',code:'te-IN'},
+  {key:'ta',name:'தமிழ்',code:'ta-IN'},{key:'kn',name:'ಕನ್ನಡ',code:'kn-IN'},
+  {key:'hi',name:'हिन्दी',code:'hi-IN'},{key:'ml',name:'മലയാളം',code:'ml-IN'}];
+
+/* National teams — flag-inspired kit colours only (no official logos/crests). */
+const TEAMS=[
+  {key:'IND',name:'India',       jersey:0x1f74c4, trim:0xff9933, pants:0xe9eef2},
+  {key:'AUS',name:'Australia',   jersey:0xf4d000, trim:0x0a6b3a, pants:0x0a6b3a},
+  {key:'ENG',name:'England',     jersey:0x4a90d9, trim:0xffffff, pants:0x16315e},
+  {key:'PAK',name:'Pakistan',    jersey:0x0a7d3f, trim:0xffffff, pants:0x064d27},
+  {key:'RSA',name:'South Africa',jersey:0x0a7d3f, trim:0xf4d000, pants:0x064d27},
+  {key:'NZ', name:'New Zealand', jersey:0x141414, trim:0x9aa0a6, pants:0x141414},
+  {key:'SL', name:'Sri Lanka',   jersey:0x1f3f9f, trim:0xf4d000, pants:0x16205e},
+  {key:'WI', name:'West Indies', jersey:0x7a1f2b, trim:0xf4d000, pants:0x4d141c},
+];
+
+const C={
+ start:{en:["Here we go, the bowler steams in!","Game on — let's see fireworks!"],te:["ఆట మొదలైంది, బౌలర్ పరుగెత్తుకొస్తున్నాడు!","రండి, బ్యాటింగ్ చూద్దాం!"],ta:["ஆட்டம் தொடங்குகிறது!","வாங்க, அடி பார்க்கலாம்!"],kn:["ಆಟ ಶುರು, ಬೌಲರ್ ಓಡಿ ಬರುತ್ತಿದ್ದಾನೆ!","ಬನ್ನಿ, ಬ್ಯಾಟಿಂಗ್ ನೋಡೋಣ!"],hi:["खेल शुरू, गेंदबाज़ दौड़ रहा है!","चलिए, कुछ छक्के देखते हैं!"],ml:["കളി തുടങ്ങി!","വരൂ, ബാറ്റിങ് കാണാം!"]},
+ six:{en:["SIX! That's out of the ground!","Massive! Into the crowd for SIX!","Cleared the ropes with ease!"],te:["సిక్స్! బంతి స్టేడియం దాటేసింది!","అదిరిపోయింది! భారీ సిక్సర్!","రోప్స్ దాటి సిక్స్!"],ta:["சிக்ஸ்! மைதானத்தை தாண்டியது!","அபாரம்! பெரிய சிக்சர்!","எளிதாக கோடியை தாண்டியது!"],kn:["ಸಿಕ್ಸ್! ಮೈದಾನ ದಾಟಿತು!","ಭರ್ಜರಿ ಸಿಕ್ಸರ್!","ಸುಲಭವಾಗಿ ಗಡಿ ದಾಟಿತು!"],hi:["छक्का! गेंद मैदान के बाहर!","ज़बरदस्त! बड़ा छक्का!","आसानी से रस्सी पार!"],ml:["സിക്സ്! മൈതാനത്തിന് പുറത്ത്!","ഗംഭീരം! വലിയ സിക്സർ!","എളുപ്പത്തിൽ അതിര് കടന്നു!"]},
+ four:{en:["FOUR! Races to the boundary!","Beautiful shot — four runs!","Cracked through the gap!"],te:["ఫోర్! బౌండరీకి దూసుకెళ్లింది!","అద్భుతమైన షాట్ — నాలుగు పరుగులు!","గ్యాప్ లో నుంచి ఫోర్!"],ta:["ஃபோர்! எல்லைக்கு பறக்கிறது!","அழகான அடி — நான்கு ரன்கள்!","இடைவெளி வழியாக ஃபோர்!"],kn:["ಫೋರ್! ಗಡಿಗೆ ಓಡಿತು!","ಸುಂದರ ಹೊಡೆತ — ನಾಲ್ಕು ರನ್!","ಗ್ಯಾಪ್ ಮೂಲಕ ಫೋರ್!"],hi:["चौका! सीमा की ओर दौड़ा!","शानदार शॉट — चार रन!","गैप से निकला — चौका!"],ml:["ഫോർ! അതിരിലേക്ക് പാഞ്ഞു!","മനോഹരമായ ഷോട്ട് — നാല് റൺസ്!","വിടവിലൂടെ ഫോർ!"]},
+ run:{en:["Quick single taken.","Tucked away for a couple.","Good running."],te:["ఒక్క పరుగు తీశాడు.","రెండు పరుగులు.","మంచి పరుగు."],ta:["ஒரு ரன்.","இரண்டு ரன்கள்.","நல்ல ஓட்டம்."],kn:["ಒಂದು ರನ್.","ಎರಡು ರನ್.","ಒಳ್ಳೆಯ ಓಟ."],hi:["एक रन।","दो रन।","अच्छी दौड़।"],ml:["ഒരു റൺ.","രണ്ട് റൺസ്.","നല്ല ഓട്ടം."]},
+ dot:{en:["Dot ball, no run.","Solid defence.","Beaten! No run."],te:["డాట్ బాల్, పరుగు లేదు.","మంచి డిఫెన్స్.","బీట్ అయ్యాడు!"],ta:["டாட் பந்து.","நல்ல தற்காப்பு.","ஏமாற்றம்!"],kn:["ಡಾಟ್ ಬಾಲ್.","ಉತ್ತಮ ಡಿಫೆನ್ಸ್.","ಬೀಟ್ ಆದರು!"],hi:["डॉट बॉल।","अच्छा बचाव।","चकमा खा गया!"],ml:["ഡോട്ട് ബോൾ.","നല്ല പ്രതിരോധം.","ബീറ്റ് ആയി!"]},
+ out:{en:["OUT! He's gone! Big wicket!","Bowled him! What a delivery!","Caught! End of his innings."],te:["అవుట్! వెళ్లిపోయాడు!","బౌల్డ్! ఎంత మంచి బంతి!","క్యాచ్! ఇన్నింగ్స్ ముగిసింది."],ta:["அவுட்! போய்விட்டார்!","போல்ட்! என்ன பந்து!","கேட்ச்! இன்னிங்ஸ் முடிந்தது."],kn:["ಔಟ್! ಹೋದರು!","ಬೌಲ್ಡ್! ಎಂಥ ಎಸೆತ!","ಕ್ಯಾಚ್! ಇನ್ನಿಂಗ್ಸ್ ಮುಗಿಯಿತು."],hi:["आउट! चला गया!","बोल्ड! क्या गेंद!","कैच! पारी खत्म।"],ml:["ഔട്ട്! പോയി!","ബൗൾഡ്! എന്തൊരു പന്ത്!","ക്യാച്ച്! ഇന്നിങ്സ് അവസാനിച്ചു."]},
+ win:{en:["WHAT A FINISH! You've won it!","Chase complete — victory is yours!"],te:["ఏం ముగింపు! మీరు గెలిచారు!","ఛేజ్ పూర్తి — విజయం మీదే!"],ta:["என்ன முடிவு! நீங்கள் வென்றீர்கள்!","வெற்றி உங்களுடையது!"],kn:["ಎಂಥ ಮುಕ್ತಾಯ! ನೀವು ಗೆದ್ದಿರಿ!","ಗೆಲುವು ನಿಮ್ಮದು!"],hi:["क्या अंत! आप जीत गए!","जीत आपकी!"],ml:["എന്തൊരു ഫിനിഷ്! നിങ്ങൾ ജയിച്ചു!","വിജയം നിങ്ങളുടേത്!"]},
+ lose:{en:["So close, but not enough today.","You fall just short."],te:["చాలా దగ్గరగా, కానీ సరిపోలేదు.","మీరు తక్కువతో ఆగారు."],ta:["மிக நெருக்கம், ஆனால் போதாது.","நீங்கள் தோற்றீர்கள்."],kn:["ತುಂಬಾ ಹತ್ತಿರ, ಆದರೆ ಸಾಲದು.","ನೀವು ಕಡಿಮೆ ಬಿದ್ದಿರಿ."],hi:["बहुत करीब, पर काफी नहीं।","आप पीछे रह गए।"],ml:["വളരെ അടുത്ത്, പക്ഷേ മതിയാകില്ല.","നിങ്ങൾ പിന്നിലായി."]},
+ target:{en:["Target set. Time to chase!","Here's the total to beat."],te:["లక్ష్యం ఖరారు. ఛేజ్ చేద్దాం!","ఇదే ఛేదించాల్సిన స్కోర్."],ta:["இலக்கு நிர்ணயம். துரத்தலாம்!","இதுதான் வெல்ல வேண்டிய மொத்தம்."],kn:["ಗುರಿ ನಿಗದಿ. ಚೇಸ್ ಮಾಡೋಣ!","ಇದೇ ಮೀರಬೇಕಾದ ಮೊತ್ತ."],hi:["लक्ष्य तय। पीछा करें!","यही है हराने वाला स्कोर।"],ml:["ലക്ഷ്യം നിശ്ചയിച്ചു. ചേസ് ചെയ്യാം!","ഇതാണ് മറികടക്കേണ്ട സ്കോർ."]},
+};
+
+let state={lang:'en',overs:2,voice:true,night:false,teamA:'IND',teamB:'AUS',batName:'',ttsKey:'',
+  target:0,runs:0,wkts:0,balls:0,totalBalls:12,ended:false,phase:'idle',bowlStart:0,flight:null,swung:false,swingX:0,swinging:false};
+
+const $=s=>document.querySelector(s);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const teamByKey=k=>TEAMS.find(t=>t.key===k)||TEAMS[0];
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$('#'+id).classList.add('active');}
+
+/* ---- start UI ---- */
+const teamAsel=$('#teamA'), teamBsel=$('#teamB');
+TEAMS.forEach(t=>{teamAsel.add(new Option(t.name,t.key)); teamBsel.add(new Option(t.name,t.key));});
+teamAsel.value='IND'; teamBsel.value='AUS';
+teamAsel.onchange=()=>state.teamA=teamAsel.value;
+teamBsel.onchange=()=>state.teamB=teamBsel.value;
+$('#batName').oninput=e=>state.batName=e.target.value.trim();
+
+const lg=$('#langGrid');
+LANGS.forEach(l=>{const d=document.createElement('div');d.className='chip'+(l.key==='en'?' sel':'');d.textContent=l.name;
+  d.onclick=()=>{document.querySelectorAll('#langGrid .chip').forEach(c=>c.classList.remove('sel'));d.classList.add('sel');state.lang=l.key;};lg.appendChild(d);});
+const og=$('#oversGrid');
+[{n:1,t:'1 Over'},{n:2,t:'2 Overs'},{n:5,t:'5 Overs'}].forEach(o=>{const d=document.createElement('div');d.className='chip'+(o.n===2?' sel':'');d.textContent=o.t;
+  d.onclick=()=>{document.querySelectorAll('#oversGrid .chip').forEach(c=>c.classList.remove('sel'));d.classList.add('sel');state.overs=o.n;};og.appendChild(d);});
+$('#voiceSwitch').onclick=function(){this.classList.toggle('on');state.voice=this.classList.contains('on');};
+$('#nightSwitch').onclick=function(){this.classList.toggle('on');state.night=this.classList.contains('on');};
+// load + persist the optional Cloud TTS key
+try{ const saved=localStorage.getItem('ssc_tts_key'); if(saved){ state.ttsKey=saved; $('#ttsKey').value=saved; } }catch(e){}
+$('#ttsKey').oninput=e=>{ state.ttsKey=e.target.value.trim(); try{ localStorage.setItem('ssc_tts_key',state.ttsKey); }catch(e){} };
+
+/* ---- speech ----
+   Primary: online TTS that ships voices for ALL 6 languages (te/ta/kn/hi/ml/en),
+   so commentary actually speaks even when the device has no local language pack.
+   Fallback: the browser's built-in speechSynthesis (used if the network voice fails). */
+let voices=[], ttsAudio=null;
+function loadVoices(){voices=window.speechSynthesis?speechSynthesis.getVoices():[];}
+if(window.speechSynthesis){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
+
+function speakLocal(t){
+  if(!window.speechSynthesis)return;
+  try{speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(t);const code=(LANGS.find(l=>l.key===state.lang)||{}).code||'en-IN';u.lang=code;
+    const v=voices.find(v=>v.lang===code)||voices.find(v=>v.lang&&v.lang.startsWith(state.lang))||voices.find(v=>v.lang&&v.lang.startsWith('en'));
+    if(v)u.voice=v;u.rate=1.04;speechSynthesis.speak(u);}catch(e){}
+}
+function playB64(b64){ try{ if(!ttsAudio){ttsAudio=new Audio();} ttsAudio.pause(); ttsAudio.src='data:audio/mp3;base64,'+b64; const p=ttsAudio.play(); if(p&&p.catch)p.catch(function(){}); }catch(e){} }
+function speak(t){
+  if(!state.voice)return;
+  if(window.speechSynthesis)speechSynthesis.cancel();   // stop any local utterance
+  const code=(LANGS.find(l=>l.key===state.lang)||{}).code||'en-IN';   // en-IN,te-IN,ta-IN,kn-IN,hi-IN,ml-IN
+  if(state.ttsKey){
+    // Google Cloud Text-to-Speech — has native voices for all 6 languages
+    fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key='+encodeURIComponent(state.ttsKey),{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({input:{text:t}, voice:{languageCode:code}, audioConfig:{audioEncoding:'MP3', speakingRate:1.06}})
+    }).then(r=>r.json()).then(d=>{ if(d&&d.audioContent) playB64(d.audioContent); else speakLocal(t); }).catch(()=>speakLocal(t));
+  } else {
+    speakLocal(t); // browser voice (uses installed Windows language packs)
+  }
+}
+function commentary(evt){const line=pick(C[evt][state.lang]||C[evt].en);$('#commTxt').textContent=line;
+  $('#commTag').textContent=(LANGS.find(l=>l.key===state.lang)||{}).name+' commentary';speak(line);return line;}
+
+/* ====================== 3D SCENE ====================== */
+let scene,camera,renderer,ball,batGroup,bowler,stumpsNear=[],stumpsFar=[],stageEl,raf,floodlights=[],sun,hemi,sky;
+const PITCH_NEAR=8, PITCH_FAR=-8, BOUNDARY=42;
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+/* ---- realistic player model (Mixamo FBX) + animation clips ---- */
+let playerProto=null, MODEL_SCALE=0.012, mixers=[], lastFrameT=0, modelStatus='loading';
+let clips={idle:null, run:null, throw:null, swing:null};
+// bat grip transform in the right-hand bone's local space — solved so the blade hangs down/forward from the hand
+let BAT_GRIP={ pos:[0,0,0], rot:[-0.6554,-1.0945,2.5563] };
+function loadFBX(url){ return new Promise(function(res,rej){ new THREE.FBXLoader().load(url,res,undefined,rej); }); }
+async function loadPlayerModel(){
+  if(typeof THREE.FBXLoader==='undefined'){ modelStatus='no-loader'; return; }
+  try{
+    const base=await loadFBX('models/player.fbx');
+    const box=new THREE.Box3().setFromObject(base); const h=(box.max.y-box.min.y)||160; MODEL_SCALE=2.0/h;
+    base.traverse(o=>{ if(o.isMesh){ o.castShadow=false; o.frustumCulled=false; } });
+    playerProto=base;
+    clips.idle=(base.animations&&base.animations[0])||null;
+    modelStatus='ready';                       // playable with idle immediately
+    // pull just the animation clip out of each action file (same skeleton)
+    const extra=[['run','models/run.fbx'],['throw','models/throw.fbx'],['swing','models/swing.fbx']];
+    for(const e of extra){ try{ const f=await loadFBX(e[1]); if(f.animations&&f.animations[0]){ const c=f.animations[0]; c.name=e[0]; clips[e[0]]=c; } }catch(err){} }
+  }catch(e){ modelStatus='error'; }
+}
+loadPlayerModel();
+
+/* clone the realistic model, tinted to a team kit, with all clips wired as actions */
+function cloneRealistic(kit,withBat){
+  const root=THREE.SkeletonUtils.clone(playerProto);
+  root.scale.setScalar(MODEL_SCALE);
+  // colour the kit by mesh: jersey, pants, shoes — leave skin/face/hair natural
+  root.traverse(o=>{ if(o.isMesh){ o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone();
+    const n=(o.name||'').toLowerCase();
+    const mats=Array.isArray(o.material)?o.material:[o.material];
+    mats.forEach(m=>{ if(!m.color) return;
+      if(/sweater|collar|shirt|jersey|top|vest/.test(n)) m.color.set(kit.jersey);
+      else if(/pant|short|trouser|leg/.test(n)) m.color.set(kit.pants);
+      else if(/shoe|boot/.test(n)) m.color.set(0xf2f2ee);
+      else m.color.set(0xffffff); // body/skin/hair keep their natural texture
+    });
+  }});
+  const wrap=new THREE.Group(); wrap.add(root); wrap.userData.real=true;
+  // country name across chest + back
+  const nameTex=makeNameTexture(kit.name,kit.jersey,0xffffff);
+  [[0,1.45,0.17,0],[0,1.45,-0.17,Math.PI]].forEach(p=>{ const np=new THREE.Mesh(new THREE.PlaneGeometry(0.46,0.2),
+    new THREE.MeshLambertMaterial({map:nameTex})); np.position.set(p[0],p[1],p[2]); np.rotation.y=p[3]; wrap.add(np); });
+  const mixer=new THREE.AnimationMixer(root); mixers.push(mixer);
+  const actions={};
+  ['idle','run','throw','swing'].forEach(n=>{ if(clips[n]){ actions[n]=mixer.clipAction(clips[n]); } });
+  if(actions.idle){ actions.idle.play(); mixer.setTime(withBat?0:Math.random()*1.5); } // batsman idle deterministic so bat grip is consistent
+  wrap.userData.mixer=mixer; wrap.userData.actions=actions; wrap.userData.current='idle';
+  if(withBat){ const bat=new THREE.Group();
+    const blade=new THREE.Mesh(new THREE.BoxGeometry(0.17,0.95,0.11),new THREE.MeshLambertMaterial({color:0xe7c178})); blade.position.y=-0.5; bat.add(blade);
+    const handle=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.4,8),new THREE.MeshLambertMaterial({color:0x222})); handle.position.y=0.08; bat.add(handle);
+    // attach to the right-hand bone so it's gripped and follows the hand
+    let hand=null; root.traverse(o=>{ if(!hand && o.isBone && /RightHand$/.test(o.name)) hand=o; });
+    if(hand){
+      bat.scale.setScalar(1/MODEL_SCALE);          // counter the model's down-scale so the bat is ~1m
+      bat.position.set(...BAT_GRIP.pos); bat.rotation.set(...BAT_GRIP.rot);
+      hand.add(bat); wrap.userData.batInHand=true;
+    } else { bat.position.set(0.45,1.4,0.2); bat.rotation.z=0.5; wrap.add(bat); }
+    wrap.userData.bat=bat;
+  }
+  return wrap;
+}
+/* crossfade a player group to a named clip; once=true plays a single shot then returns to idle */
+function playClip(group,name,once){
+  if(!group||!group.userData||!group.userData.actions)return;
+  const acts=group.userData.actions, next=acts[name]; if(!next)return;
+  const cur=acts[group.userData.current];
+  next.reset(); next.enabled=true;
+  if(once){ next.setLoop(THREE.LoopOnce,1); next.clampWhenFinished=true; next.timeScale=1.1; }
+  else { next.setLoop(THREE.LoopRepeat,Infinity); }
+  next.fadeIn(0.15).play();
+  if(cur&&cur!==next) cur.fadeOut(0.15);
+  group.userData.current=name;
+  if(once){ const mx=group.userData.mixer;
+    const onFin=function(e){ if(e.action===next){ mx.removeEventListener('finished',onFin); playClip(group,'idle',false); } };
+    mx.addEventListener('finished',onFin);
+  }
+}
+/* choose realistic model if loaded, else the stylised procedural cricketer */
+function buildPlayer(kit,withBat){ return (modelStatus==='ready'&&playerProto)?cloneRealistic(kit,withBat):makeHuman(kit,withBat); }
+
+/* jersey name texture (e.g. "INDIA") drawn on a canvas */
+function makeNameTexture(name,bg,fg){
+  const c=document.createElement('canvas'); c.width=256; c.height=128;
+  const x=c.getContext('2d');
+  x.fillStyle='#'+new THREE.Color(bg).getHexString(); x.fillRect(0,0,256,128);
+  x.fillStyle='#'+new THREE.Color(fg).getHexString();
+  x.font='bold 46px Arial'; x.textAlign='center'; x.textBaseline='middle';
+  x.fillText((name||'').toUpperCase().slice(0,9),128,64);
+  const t=new THREE.CanvasTexture(c); t.anisotropy=4; return t;
+}
+
+/* build a humanoid cricketer from a kit */
+function makeHuman(kit,withBat){
+  const g=new THREE.Group();
+  const jersey=new THREE.MeshLambertMaterial({color:kit.jersey});
+  const pants=new THREE.MeshLambertMaterial({color:kit.pants});
+  const skin=new THREE.MeshLambertMaterial({color:0xc08a5e});
+  const trim=new THREE.MeshLambertMaterial({color:kit.trim});
+  const white=new THREE.MeshLambertMaterial({color:0xf2f2ee});
+  const dark=new THREE.MeshLambertMaterial({color:0x1a1a1a});
+  // legs
+  const legGeo=new THREE.CylinderGeometry(0.13,0.11,0.95,8);
+  const lL=new THREE.Mesh(legGeo,pants); lL.position.set(-0.17,0.48,0); g.add(lL);
+  const lR=new THREE.Mesh(legGeo,pants); lR.position.set(0.17,0.48,0); g.add(lR);
+  // shoes
+  [-0.17,0.17].forEach(x=>{const sh=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.13,0.36),white);sh.position.set(x,0.06,0.06);g.add(sh);});
+  // torso
+  const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.28,0.85,12),jersey); torso.position.y=1.32; g.add(torso);
+  const collar=new THREE.Mesh(new THREE.TorusGeometry(0.16,0.04,6,12),trim); collar.rotation.x=Math.PI/2; collar.position.y=1.74; g.add(collar);
+  const sleeves=new THREE.Mesh(new THREE.TorusGeometry(0.32,0.06,6,16),trim); sleeves.rotation.x=Math.PI/2; sleeves.position.y=1.5; g.add(sleeves);
+  // country name across chest + back
+  const nameTex=makeNameTexture(kit.name,kit.jersey,0xffffff);
+  [[0.33,0],[-0.33,Math.PI]].forEach(p=>{const np=new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.25),
+    new THREE.MeshLambertMaterial({map:nameTex,transparent:false})); np.position.set(0,1.4,p[0]); np.rotation.y=p[1]; g.add(np);});
+  // arms — right arm on a shoulder pivot so it can windmill for bowling
+  const armGeo=new THREE.CylinderGeometry(0.09,0.08,0.7,8);
+  const aL=new THREE.Mesh(armGeo,skin); aL.position.set(-0.38,1.4,0); aL.rotation.z=0.35; g.add(aL);
+  const armPivot=new THREE.Group(); armPivot.position.set(0.4,1.72,0);
+  const aR=new THREE.Mesh(armGeo,skin); aR.position.set(0,-0.33,0); armPivot.add(aR);
+  const rGlove=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.16,0.16),white); rGlove.position.set(0,-0.66,0.02); armPivot.add(rGlove);
+  armPivot.rotation.z=-0.22; g.add(armPivot);
+  const lGlove=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.16,0.16),white); lGlove.position.set(-0.46,1.06,0.05); g.add(lGlove);
+  // neck + head
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.12,8),skin); neck.position.y=1.8; g.add(neck);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.2,16,16),skin); head.position.y=1.96; g.add(head);
+  // helmet shell + peak + face grille
+  const helm=new THREE.Mesh(new THREE.SphereGeometry(0.235,18,18,0,Math.PI*2,0,Math.PI*0.6),trim); helm.position.y=1.99; g.add(helm);
+  const peak=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.04,0.18),trim); peak.position.set(0,1.99,0.2); g.add(peak);
+  const grille=new THREE.Group();
+  for(let i=0;i<3;i++){const bar=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.022,0.02),dark);bar.position.set(0,1.94+i*0.06,0.205);grille.add(bar);}
+  [-0.14,0.14].forEach(x=>{const v=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.18,0.02),dark);v.position.set(x,1.97,0.205);grille.add(v);});
+  g.add(grille);
+  g.userData.arms=[aL,aR]; g.userData.bowlArm=armPivot;
+  if(withBat){
+    // batting pads on shins
+    [-0.17,0.17].forEach(x=>{const pad=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.85,0.14),white);pad.position.set(x,0.5,0.13);g.add(pad);
+      for(let k=0;k<3;k++){const roll=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.06,0.04),new THREE.MeshLambertMaterial({color:0xdedede}));roll.position.set(x,0.25+k*0.22,0.21);g.add(roll);}});
+    // bat
+    const bat=new THREE.Group();
+    const blade=new THREE.Mesh(new THREE.BoxGeometry(0.17,0.95,0.11),new THREE.MeshLambertMaterial({color:0xe7c178}));
+    blade.position.y=-0.5; bat.add(blade);
+    const edge=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.95,0.03),trim); edge.position.set(0,-0.5,0.07); bat.add(edge);
+    const handle=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.4,8),dark); handle.position.y=0.08; bat.add(handle);
+    bat.position.set(0.5,1.45,0.15); bat.rotation.z=0.5; g.add(bat); g.userData.bat=bat;
+  }
+  return g;
+}
+
+function makeStumps(z){const arr=[];const mat=new THREE.MeshLambertMaterial({color:0xf3e9c9});
+  for(let i=-1;i<=1;i++){const s=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,1.4,8),mat);s.position.set(i*0.22,0.7,z);scene.add(s);arr.push(s);}return arr;}
+function resetStumps(group){group.forEach((s,i)=>{s.position.set((i-1)*0.22,0.7,s.userData.z||s.position.z);s.rotation.set(0,0,0);});}
+function knockStumps(group){group.forEach(s=>{s.rotation.x=-1.3-Math.random()*0.4;s.position.y=0.25;s.position.z+=0.5;});}
+
+let crowdMesh=null, crowdBaseY=[];
+function makeCrowd(){
+  const geo=new THREE.BoxGeometry(0.7,0.95,0.55);
+  const mat=new THREE.MeshLambertMaterial({color:0xffffff});
+  const tiers=16, per=320, COUNT=tiers*per;
+  const mesh=new THREE.InstancedMesh(geo,mat,COUNT);
+  const dummy=new THREE.Object3D(); const col=new THREE.Color();
+  crowdBaseY=new Float32Array(COUNT);
+  let i=0;
+  for(let t=0;t<tiers;t++){
+    const ft=t/(tiers-1);
+    const r=lerp(BOUNDARY+10, BOUNDARY+30, ft);   // seats slope outward
+    const y=lerp(2.5, 23, ft);                    // and upward (raked bowl)
+    for(let j=0;j<per;j++){
+      const a=(j/per)*Math.PI*2 + t*0.1 + Math.random()*0.01;
+      dummy.position.set(Math.cos(a)*r, y, Math.sin(a)*r);
+      dummy.rotation.set(0,-a+Math.PI/2,0);
+      dummy.scale.set(1,0.9+Math.random()*0.3,1);
+      dummy.updateMatrix(); mesh.setMatrixAt(i,dummy.matrix);
+      col.setHSL(Math.random(),0.6,0.45+Math.random()*0.28); mesh.setColorAt(i,col);
+      crowdBaseY[i]=y; i++;
+    }
+  }
+  mesh.instanceMatrix.needsUpdate=true; if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
+  mesh.userData.dummy=dummy;
+  crowdMesh=mesh;
+  return mesh;
+}
+/* a quick crowd "bounce" reaction for sixes/fours/wickets */
+let crowdHype=0;
+function cheerCrowd(){ crowdHype=1; }
+
+function makeFloodlight(x,z){
+  const g=new THREE.Group();
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.6,22,8),new THREE.MeshLambertMaterial({color:0x9aa0a6}));
+  pole.position.y=11; g.add(pole);
+  const panel=new THREE.Mesh(new THREE.BoxGeometry(5,3,0.6),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffee,emissiveIntensity:0.2}));
+  panel.position.set(0,22,0); panel.lookAt(0,8,0); g.add(panel);
+  g.position.set(x,0,z);
+  const light=new THREE.SpotLight(0xfff6e0,0,160,Math.PI/4,0.4,1.2);
+  light.position.set(x,24,z); light.target.position.set(0,0,0); scene.add(light.target);
+  g.userData={panel,light}; scene.add(light);
+  return g;
+}
+
+function applyDayNight(){
+  const night=state.night;
+  if(night){
+    scene.background=new THREE.Color(0x070b1c); scene.fog=new THREE.Fog(0x070b1c,70,140);
+    hemi.intensity=0.28; sun.intensity=0.12; sky='night';
+  } else {
+    scene.background=new THREE.Color(0x8fd0f0); scene.fog=new THREE.Fog(0x8fd0f0,70,140);
+    hemi.intensity=0.95; sun.intensity=0.8; sky='day';
+  }
+  floodlights.forEach(f=>{
+    f.userData.light.intensity = night?2.2:0;
+    f.userData.panel.material.emissiveIntensity = night?1.4:0.15;
+  });
+}
+
+function init3D(){
+  stageEl=$('#stage');
+  const w=stageEl.clientWidth||440,h=stageEl.clientHeight||300;
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(50,w/h,0.1,400);
+  camera.position.set(0,5.6,15); camera.lookAt(0,1.5,-7);   // lower, cinematic broadcast angle
+  hemi=new THREE.HemisphereLight(0xffffff,0x335522,0.95); scene.add(hemi);
+  sun=new THREE.DirectionalLight(0xffffff,0.8); sun.position.set(25,45,20); scene.add(sun);
+
+  // ground + mowing rings
+  const ground=new THREE.Mesh(new THREE.CircleGeometry(BOUNDARY+8,64),new THREE.MeshLambertMaterial({color:0x2f9e4d}));
+  ground.rotation.x=-Math.PI/2; scene.add(ground);
+  for(let i=1;i<=6;i++){const ring=new THREE.Mesh(new THREE.RingGeometry(i*6.5-3.25,i*6.5,64),
+    new THREE.MeshLambertMaterial({color:i%2?0x2b9447:0x33ab53,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=0.01;scene.add(ring);}
+  const rope=new THREE.Mesh(new THREE.TorusGeometry(BOUNDARY,0.35,8,90),new THREE.MeshLambertMaterial({color:0xffffff}));
+  rope.rotation.x=-Math.PI/2; rope.position.y=0.3; scene.add(rope);
+  // stadium bowl wall (advertising boards level)
+  const wall=new THREE.Mesh(new THREE.CylinderGeometry(BOUNDARY+8,BOUNDARY+8,4,56,1,true),new THREE.MeshLambertMaterial({color:0x16407a,side:THREE.BackSide}));
+  wall.position.y=2; scene.add(wall);
+  // raked seating bowl that the crowd sits on
+  const standMat=new THREE.MeshLambertMaterial({color:0x222a3a,side:THREE.DoubleSide});
+  const stand=new THREE.Mesh(new THREE.CylinderGeometry(BOUNDARY+31,BOUNDARY+9,24,64,1,true),standMat);
+  stand.position.y=12; scene.add(stand);
+  // dark roof ring to frame the stands
+  const roof=new THREE.Mesh(new THREE.CylinderGeometry(BOUNDARY+34,BOUNDARY+31,2.5,64,1,true),new THREE.MeshLambertMaterial({color:0x10151f,side:THREE.DoubleSide}));
+  roof.position.y=24.5; scene.add(roof);
+  scene.add(makeCrowd());
+  // floodlight towers (diagonal corners)
+  floodlights=[];
+  [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(d=>{const f=makeFloodlight(d[0]*(BOUNDARY+5),d[1]*(BOUNDARY+5));scene.add(f);floodlights.push(f);});
+
+  // pitch + worn patches + creases
+  const pitch=new THREE.Mesh(new THREE.PlaneGeometry(4,24),new THREE.MeshLambertMaterial({color:0xcdb888}));
+  pitch.rotation.x=-Math.PI/2; pitch.position.y=0.02; scene.add(pitch);
+  // worn "good length" patches at each end
+  [3,-3].forEach(z=>{const wear=new THREE.Mesh(new THREE.PlaneGeometry(2.6,4),new THREE.MeshLambertMaterial({color:0xb39468}));
+    wear.rotation.x=-Math.PI/2; wear.position.set(0,0.025,z); scene.add(wear);});
+  // crease lines (popping + return) at both ends
+  [PITCH_NEAR-1,PITCH_FAR+1].forEach(z=>{
+    const cl=new THREE.Mesh(new THREE.PlaneGeometry(4,0.15),new THREE.MeshBasicMaterial({color:0xffffff}));cl.rotation.x=-Math.PI/2;cl.position.set(0,0.03,z);scene.add(cl);
+    [-1.3,1.3].forEach(x=>{const rl=new THREE.Mesh(new THREE.PlaneGeometry(0.12,1.6),new THREE.MeshBasicMaterial({color:0xffffff}));rl.rotation.x=-Math.PI/2;rl.position.set(x,0.03,z+(z>0?0.7:-0.7));scene.add(rl);});
+  });
+
+  stumpsNear=makeStumps(PITCH_NEAR+0.4); stumpsNear.forEach(s=>s.userData.z=s.position.z);
+  stumpsFar =makeStumps(PITCH_FAR-0.4);  stumpsFar.forEach(s=>s.userData.z=s.position.z);
+
+  const A=teamByKey(state.teamA), B=teamByKey(state.teamB);
+  lastKitA=state.teamA; lastKitB=state.teamB;
+  mixers=[]; // reset animation mixers for this build
+  // batsman (your team)
+  batGroup=buildPlayer(A,true); batGroup.position.set(-0.5,0,PITCH_NEAR+0.2); batGroup.rotation.y=Math.PI; scene.add(batGroup);
+  // non-striker (your team)
+  const ns=buildPlayer(A,false); ns.position.set(0.7,0,PITCH_FAR+1.4); scene.add(ns);
+  // bowler (opponent) — animated run-up each ball
+  bowler=buildPlayer(B,false); bowler.position.set(-0.3,0,PITCH_FAR-1); scene.add(bowler);
+  // keeper (opponent)
+  const keeper=buildPlayer(B,false); keeper.position.set(0,0,PITCH_NEAR+2.6); keeper.rotation.y=Math.PI; scene.add(keeper);
+  // fielders (opponent)
+  const fielderPos=[[13,-3],[-15,4],[20,12],[-12,-14],[9,20],[-22,-6]];
+  fielderPos.forEach(p=>{const f=buildPlayer(B,false);f.position.set(p[0],0,p[1]);f.lookAt(0,1,0);scene.add(f);});
+
+  // ball
+  ball=new THREE.Mesh(new THREE.SphereGeometry(0.26,16,16),new THREE.MeshLambertMaterial({color:0xc0392b}));
+  ball.position.set(0,1.2,PITCH_FAR); ball.visible=false; scene.add(ball);
+
+  // field map (minimap): fixed dots for fielders + a live ball dot
+  buildMinimap(fielderPos, A.jersey, B.jersey);
+
+  applyDayNight();
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(w,h);
+  stageEl.appendChild(renderer.domElement);
+  $('#loading').style.display='none';
+  window.addEventListener('resize',onResize);
+  animate();
+}
+function onResize(){if(!renderer)return;const w=stageEl.clientWidth,h=stageEl.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);}
+
+/* ---- field map (minimap) ---- */
+const MM_R=44; // svg radius; world maps [-46..46] -> [6..94]
+function mm(x,z){ return [50 + (x/(BOUNDARY+4))*MM_R, 50 + (z/(BOUNDARY+4))*MM_R]; }
+function buildMinimap(fielders, kitA, kitB){
+  const svg=document.getElementById('minimap'); if(!svg) return;
+  const C='http://www.w3.org/2000/svg';
+  let s='';
+  s+='<circle cx="50" cy="50" r="46" fill="#1f7a3c" stroke="#ffffff" stroke-width="1.5"/>';
+  s+='<circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="0.6"/>';
+  // pitch strip (vertical, far=top)
+  const [px1,py1]=mm(0,PITCH_FAR-1), [px2,py2]=mm(0,PITCH_NEAR+1);
+  s+='<rect x="'+(px1-3)+'" y="'+Math.min(py1,py2)+'" width="6" height="'+Math.abs(py2-py1)+'" rx="1.5" fill="#d8c48f"/>';
+  // fielders (opponent colour)
+  fielders.forEach(p=>{ const [x,y]=mm(p[0],p[1]); s+='<circle cx="'+x+'" cy="'+y+'" r="2.6" fill="#'+new THREE.Color(kitB).getHexString()+'" stroke="#0b1f13" stroke-width="0.5"/>'; });
+  // keeper + bowler
+  let [kx,ky]=mm(0,PITCH_NEAR+2.6); s+='<circle cx="'+kx+'" cy="'+ky+'" r="2.6" fill="#'+new THREE.Color(kitB).getHexString()+'" stroke="#0b1f13" stroke-width="0.5"/>';
+  // batsman + non-striker (your colour)
+  let [bx,by]=mm(-0.5,PITCH_NEAR); s+='<circle cx="'+bx+'" cy="'+by+'" r="2.8" fill="#'+new THREE.Color(kitA).getHexString()+'" stroke="#fff" stroke-width="0.7"/>';
+  let [nx,ny]=mm(0.7,PITCH_FAR+1.4); s+='<circle cx="'+nx+'" cy="'+ny+'" r="2.4" fill="#'+new THREE.Color(kitA).getHexString()+'" stroke="#0b1f13" stroke-width="0.5"/>';
+  // live ball dot (updated each frame)
+  s+='<circle id="mmBall" cx="50" cy="60" r="1.8" fill="#ff3b30" stroke="#fff" stroke-width="0.6" visibility="hidden"/>';
+  svg.innerHTML=s;
+}
+function updateMinimapBall(){
+  const d=document.getElementById('mmBall'); if(!d||!ball) return;
+  if(ball.visible){ const [x,y]=mm(ball.position.x, ball.position.z); d.setAttribute('cx',x.toFixed(1)); d.setAttribute('cy',y.toFixed(1)); d.setAttribute('visibility','visible'); }
+  else d.setAttribute('visibility','hidden');
+}
+
+const RUNUP_DUR=850, BOWL_RELEASE_Z=PITCH_FAR-0.6, RUNUP_START_Z=PITCH_FAR-8;
+function animate(){
+  raf=requestAnimationFrame(animate);
+  const now=performance.now();
+  // advance realistic-model animations
+  const dt=lastFrameT?Math.min(0.05,(now-lastFrameT)/1000):0; lastFrameT=now;
+  if(mixers.length){ for(let i=0;i<mixers.length;i++) mixers[i].update(dt); }
+  const arm=bowler&&bowler.userData.bowlArm;
+  if(state.phase==='runup'){
+    const p=Math.min(1,(now-state.runupStart)/RUNUP_DUR);
+    const e=p*p*(3-2*p); // smoothstep run-up
+    if(bowler){
+      bowler.position.z=lerp(RUNUP_START_Z,BOWL_RELEASE_Z,e);
+      bowler.position.x=lerp(state.swingX*0.5,-0.3,e);
+      bowler.position.y=Math.abs(Math.sin(p*Math.PI*5))*0.14; // running bob
+      if(arm){ arm.rotation.x = p<0.65 ? lerp(-0.2,-3.0,p/0.65) : lerp(-3.0,0.8,(p-0.65)/0.35); } // windmill
+    }
+    $('#timingTxt').textContent='';
+    if(p>=1){ // release the ball
+      if(bowler) bowler.position.y=0;
+      state.phase='bowling'; state.bowlStart=now;
+      ball.visible=true; ball.position.set(bowler?bowler.position.x:0,1.95,PITCH_FAR);
+      if(bowler&&bowler.userData.real) playClip(bowler,'throw',true); // bowling delivery action
+      setShots(true); $('#hint').textContent='Tap a shot as the ball reaches the bat ("NOW!").';
+    }
+  } else if(state.phase==='bowling'){
+    const p=Math.min(1,(now-state.bowlStart)/1500);
+    ball.visible=true; ball.position.z=lerp(PITCH_FAR,PITCH_NEAR+0.3,p); ball.position.x=lerp(0,state.swingX,p);
+    ball.position.y = p<0.6 ? lerp(2.2,0.28,p/0.6) : lerp(0.28,1.05,(p-0.6)/0.4);
+    if(arm) arm.rotation.x += (0-arm.rotation.x)*0.12; // arm follows through to rest
+    $('#timingTxt').textContent = p>0.78?'NOW!':(p>0.6?'get ready…':'');
+    if(p>=1){state.phase='idle'; if(!state.swung) resolveMiss();}
+  } else if(state.phase==='flight' && state.flight){
+    const f=state.flight,p=Math.min(1,(now-f.t0)/f.dur);
+    const x=lerp(f.start.x,f.end.x,p), z=lerp(f.start.z,f.end.z,p), baseY=lerp(f.start.y,f.end.y,p);
+    ball.position.set(x,Math.max(0.12,baseY+f.peak*4*p*(1-p)),z);
+    if(p>=1){const cb=f.onDone;state.flight=null;state.phase='idle';if(cb)cb();}
+  } else if(arm){ arm.rotation.x += (0-arm.rotation.x)*0.1; }
+  // procedural bat swing only for the stylised batsman (real model swings via its clip)
+  if(batGroup&&batGroup.userData.bat&&!batGroup.userData.real){const bat=batGroup.userData.bat;const tgt=state.swinging?-1.1:0.5;bat.rotation.z+=(tgt-bat.rotation.z)*0.35;}
+  // crowd celebration bounce
+  if(crowdMesh&&crowdHype>0){
+    crowdHype=Math.max(0,crowdHype-0.012);
+    const d=crowdMesh.userData.dummy, m=new THREE.Matrix4(), pos=new THREE.Vector3(),q=new THREE.Quaternion(),sc=new THREE.Vector3();
+    const N=crowdMesh.count;
+    for(let i=0;i<N;i+=2){ // every other for perf
+      crowdMesh.getMatrixAt(i,m); m.decompose(pos,q,sc);
+      pos.y=crowdBaseY[i]+Math.sin(now*0.02+i)*crowdHype*0.6;
+      m.compose(pos,q,sc); crowdMesh.setMatrixAt(i,m);
+    }
+    crowdMesh.instanceMatrix.needsUpdate=true;
+  }
+  updateMinimapBall();
+  renderer.render(scene,camera);
+}
+
+/* ====================== GAME FLOW ====================== */
+function currentBatter(){ const first=(state.batName||'Batter 1'); return state.wkts===0?first:('Batter '+(state.wkts+1)); }
+$('#startBtn').onclick=()=>{
+  state.totalBalls=state.overs*6;
+  const perBall=1.1+Math.random()*0.6;
+  state.target=Math.max(8,Math.round(state.totalBalls*perBall)+(Math.random()<.5?0:3));
+  state.runs=0;state.wkts=0;state.balls=0;state.ended=false;
+  $('#ballStrip').innerHTML='';
+  const A=teamByKey(state.teamA),B=teamByKey(state.teamB);
+  $('#whoLbl').textContent=currentBatter()+' BATTING';
+  $('#nameplate').textContent=(state.batName?state.batName+' · ':'')+A.name+'  v  '+B.name+(state.night?'  🌙':'  ☀️');
+  updateBoard();
+  show('scrGame');
+  setTimeout(()=>{
+    if(renderer && (lastKitA!==state.teamA || lastKitB!==state.teamB)) teardown3D();
+    if(!renderer) init3D(); else applyDayNight();
+    resetStumps(stumpsNear); resetStumps(stumpsFar);
+    commentary('target'); setTimeout(()=>{commentary('start');newBall();},1300); },60);
+};
+/* full rebuild when teams change so kits recolour */
+let lastKitA=null,lastKitB=null;
+function teardown3D(){ if(raf)cancelAnimationFrame(raf); if(renderer){renderer.dispose(); if(renderer.domElement&&renderer.domElement.parentNode)renderer.domElement.parentNode.removeChild(renderer.domElement);} renderer=null;scene=null;ball=null;batGroup=null;bowler=null;stumpsNear=[];stumpsFar=[];floodlights=[];mixers=[];lastFrameT=0; }
+
+function updateBoard(){
+  $('#runs').textContent=state.runs;$('#wkts').textContent=state.wkts;
+  $('#overTxt').textContent=Math.floor(state.balls/6)+'.'+(state.balls%6);
+  const need=state.target-state.runs,left=state.totalBalls-state.balls;
+  $('#targetTxt').textContent=`Need ${Math.max(0,need)} from ${left} ball${left===1?'':'s'} · Target ${state.target}`;
+}
+function setShots(on){document.querySelectorAll('.shotBtn').forEach(b=>b.disabled=!on);}
+
+function newBall(){
+  if(state.ended)return;
+  resetStumps(stumpsNear);
+  state.swung=false;state.swinging=false;state.swingX=(Math.random()-0.5)*1.6;
+  setShots(false); $('#hint').textContent='Bowler running in…';
+  ball.visible=false;
+  if(bowler){ bowler.position.set(state.swingX*0.5,0,RUNUP_START_Z); if(bowler.userData.real) playClip(bowler,'run',false); }
+  state.phase='runup'; state.runupStart=performance.now();
+}
+
+document.querySelectorAll('.shotBtn').forEach(b=>{
+  b.onclick=()=>{
+    if(state.phase!=='bowling'||state.swung)return;
+    state.swung=true;state.swinging=true;setShots(false);setTimeout(()=>state.swinging=false,250);
+    if(batGroup&&batGroup.userData.real) playClip(batGroup,'swing',true); // batting shot action
+    const p=Math.min(1,(performance.now()-state.bowlStart)/1500);
+    let q; if(p>=0.84&&p<=0.96)q=1.0; else if(p>0.78&&p<1.0)q=0.7; else if(p>0.68)q=0.4; else q=0.12;
+    state.phase='idle'; resolveShot(b.dataset.shot,p>=0.99?0.7:q);
+  };
+});
+function resolveMiss(){state.swung=true;hitDecided('out','bowled',0);}
+
+function resolveShot(shot,q){
+  let runs=0,out=false,mode='';const r=Math.random();
+  if(shot==='defend'){ if(q<0.25){out=r<0.10;mode='bowled';} runs=q>=0.7?(r<0.5?1:0):0; }
+  else if(shot==='drive'){
+    if(q>=1.0)runs=r<0.45?4:(r<0.8?2:1);
+    else if(q>=0.7)runs=r<0.4?2:1;
+    else if(q>=0.4){runs=r<0.5?1:0;out=r>0.9;mode='caught';}
+    else{out=r<0.5;mode=r<0.5?'bowled':'';}
+  } else {
+    if(q>=1.0)runs=r<0.55?6:(r<0.85?4:2);
+    else if(q>=0.7){runs=r<0.45?6:(r<0.7?4:1);out=r>0.88;mode='caught';}
+    else if(q>=0.4){out=r<0.45;mode='caught';runs=out?0:(r<0.8?2:4);}
+    else{out=r<0.78;mode='bowled';runs=out?0:1;}
+  }
+  if(out)hitDecided('out',mode||'caught',0);
+  else if(runs===6)hitDecided('six',null,6);
+  else if(runs===4)hitDecided('four',null,4);
+  else if(runs>0)hitDecided('run',null,runs);
+  else hitDecided('dot',null,0);
+}
+
+function hitDecided(kind,mode,runs){
+  $('#timingTxt').textContent='';
+  const ang=(Math.random()-0.5)*1.7; const dir=new THREE.Vector3(Math.sin(ang),0,-Math.cos(ang));
+  let end,peak,dur=1200,after;
+  if(kind==='six'){end=new THREE.Vector3(dir.x*(BOUNDARY+12),6,dir.z*(BOUNDARY+12));peak=16;dur=1500;}
+  else if(kind==='four'){end=new THREE.Vector3(dir.x*(BOUNDARY+2),0.2,dir.z*(BOUNDARY+2));peak=2.5;dur=1300;}
+  else if(kind==='run'){const d=14+runs*6;end=new THREE.Vector3(dir.x*d,0.2,dir.z*d);peak=3;}
+  else if(kind==='dot'){end=new THREE.Vector3((Math.random()-0.5)*4,0.2,PITCH_NEAR+5);peak=0.8;dur=700;}
+  else{ if(mode==='bowled'){end=new THREE.Vector3(0,0.3,PITCH_NEAR+0.4);peak=0.2;dur=380;after=()=>knockStumps(stumpsNear);}
+        else{const d=10+Math.random()*12;end=new THREE.Vector3(dir.x*d,1.4,dir.z*d);peak=9;dur=1250;} }
+  state.flight={start:ball.position.clone(),end,peak,dur,t0:performance.now(),onDone:()=>{if(after)after();finishBall(kind,runs);}};
+  state.phase='flight';
+  const flash=$('#flash');
+  if(kind==='six'){flash.textContent='SIX!';flash.className='flash six show';commentary('six');cheerCrowd();}
+  else if(kind==='four'){flash.textContent='FOUR!';flash.className='flash four show';commentary('four');cheerCrowd();}
+  else if(kind==='out'){setTimeout(()=>{flash.textContent='OUT!';flash.className='flash out show';commentary('out');cheerCrowd();},mode==='bowled'?350:1100);}
+  else if(kind==='run')commentary('run'); else commentary('dot');
+  setTimeout(()=>flash.className='flash',kind==='out'?1700:1100);
+}
+
+function finishBall(kind,runs){
+  ball.visible=false;state.balls++;
+  if(kind==='out'){state.wkts++;addBall('W','w');}
+  else if(kind==='six'){state.runs+=6;addBall('6','six');}
+  else if(kind==='four'){state.runs+=4;addBall('4','four');}
+  else if(kind==='run'){state.runs+=runs;addBall(runs,'r');}
+  else addBall('•','b');
+  updateBoard();
+  setTimeout(()=>{
+    if(state.runs>=state.target)return endGame(true);
+    if(state.wkts>=10)return endGame(false);
+    if(state.balls>=state.totalBalls)return endGame(state.runs>=state.target);
+    if(kind==='out') newBatsman();          // a fresh batsman comes in
+    ball.position.set(0,1.2,PITCH_FAR); newBall();
+  },700);
+}
+/* bring a new batsman to the crease after a wicket */
+function newBatsman(){
+  const name=currentBatter();
+  $('#whoLbl').textContent=name+' BATTING';
+  const A=teamByKey(state.teamA),B=teamByKey(state.teamB);
+  $('#nameplate').textContent=name+' · '+A.name+'  v  '+B.name+(state.night?'  🌙':'  ☀️');
+  // reset the batsman's stance
+  if(batGroup&&batGroup.userData.real&&batGroup.userData.mixer){ playClip(batGroup,'idle',false); batGroup.userData.mixer.setTime(0); }
+}
+function addBall(t,c){const d=document.createElement('div');d.className='bx '+c;d.textContent=t;$('#ballStrip').appendChild(d);}
+
+function endGame(won){
+  state.ended=true;setShots(false);state.phase='idle';
+  const need=state.target-state.runs;
+  $('#resTitle').textContent=won?'🏆 YOU WON!':'😞 YOU LOST';
+  $('#resTitle').style.color=won?'var(--gold)':'var(--bad)';
+  if(won){const bl=state.totalBalls-state.balls;$('#resSub').textContent=`${state.runs}/${state.wkts} — chased ${state.target} with ${bl} ball${bl===1?'':'s'} to spare.`;}
+  else $('#resSub').textContent=`${state.runs}/${state.wkts} — fell ${Math.max(1,need)} run${need===1?'':'s'} short of ${state.target}.`;
+  const line=pick(C[won?'win':'lose'][state.lang]||C[won?'win':'lose'].en);
+  $('#resCommTxt').textContent=line;speak(line);
+  show('scrResult');
+}
+$('#againBtn').onclick=()=>$('#startBtn').click();
+$('#homeBtn').onclick=()=>{if(window.speechSynthesis)speechSynthesis.cancel();state.phase='idle';show('scrStart');};
+</script>
+</body>
+</html>

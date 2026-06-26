@@ -24,6 +24,8 @@ services:
         fromDatabase:
           name: chatapp-db
           property: connectionString
+      - key: OPENAI_API_KEY    # for ✨ Ghibli art; set the value in the Render dashboard
+        sync: false
 
     # --- Persistent storage (OPTIONAL) ----------------------------------------
     # The free plan uses an EPHEMERAL filesystem: the JSON DB and uploads reset

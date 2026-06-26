@@ -17,7 +17,15 @@
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"D:\\\\PROJECT 1\"; npm run build 2>&1 | Select-Object -Last 25)",
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); $env:PORT=\"4000\"; Set-Location \"D:\\\\PROJECT 1\"; npm start 2>&1)",
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"D:\\\\PROJECT 1\"; npm --prefix client run build 2>&1 | Select-Object -Last 6)",
-      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"D:\\\\PROJECT 1\"; npm --prefix client run build 2>&1 | Select-Object -Last 5)"
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"D:\\\\PROJECT 1\"; npm --prefix client run build 2>&1 | Select-Object -Last 5)",
+      "PowerShell(Start-Process \"https://chatapp-030v.onrender.com\")",
+      "PowerShell(\"Opened https://chatapp-030v.onrender.com in your default browser\")",
+      "Bash(ls -la \"/d/wcc7/\" 2>/dev/null && echo \"---\" && ls \"/d/PROJECT 1/cricket-game/\")",
+      "Bash(mkdir -p \"/d/PROJECT 1/cricket-game/models\" && cp \"/d/wcc7/Idle.fbx\" \"/d/PROJECT 1/cricket-game/models/player.fbx\" && ls -la \"/d/PROJECT 1/cricket-game/models/\")",
+      "Bash(cp \"/d/wcc7/Baseball Pitching.fbx\" throw.fbx)",
+      "Bash(cp \"/d/wcc7/Running.fbx\" run.fbx)",
+      "Bash(cp \"/d/wcc7/Baseball Strike.fbx\" swing.fbx)",
+      "Read(//d/d/PROJECT 1/cricket-game/**)"
     ]
   }
 }

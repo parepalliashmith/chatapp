@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import Avatar from './Avatar.jsx';
 import MessageBubble from './MessageBubble.jsx';
+import GhibliModal from './GhibliModal.jsx';
 import { api } from '../lib/api.js';
 import { getSocket } from '../lib/socket.js';
 import { dayLabel, lastSeenLabel } from '../lib/util.js';
@@ -8,6 +9,7 @@ import { dayLabel, lastSeenLabel } from '../lib/util.js';
 export default function ChatWindow({ me, conversation, messages, typingUsers, presence, onBack, onSend, onDelete, onStartCall }) {
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [showGhibli, setShowGhibli] = useState(false);
   const scrollRef = useRef(null);
   const fileRef = useRef(null);
   const typingTimer = useRef(null);
@@ -151,6 +153,14 @@ export default function ChatWindow({ me, conversation, messages, typingUsers, pr
           {uploading ? '…' : '📎'}
         </button>
         <input ref={fileRef} type="file" hidden onChange={onPickFile} accept="image/*,application/pdf,.doc,.docx,.txt,.zip" />
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={() => setShowGhibli(true)}
+          title="Ghibli art from a photo"
+        >
+          ✨
+        </button>
         <input
           className="composer-input"
           placeholder="Type a message"
@@ -160,6 +170,13 @@ export default function ChatWindow({ me, conversation, messages, typingUsers, pr
         />
         <button type="submit" className="send-btn" title="Send" disabled={!text.trim()}>➤</button>
       </form>
+
+      {showGhibli && (
+        <GhibliModal
+          onClose={() => setShowGhibli(false)}
+          onSend={(media) => { onSend(conversation.id, { media }); setShowGhibli(false); }}
+        />
+      )}
     </section>
   );
 }

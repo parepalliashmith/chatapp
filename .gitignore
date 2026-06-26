@@ -1,0 +1,15 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# builds
+client/dist/
+
+# runtime data (created at runtime; not committed)
+server/data/
+server/uploads/
+
+# misc
+.env
+*.log
+.DS_Store

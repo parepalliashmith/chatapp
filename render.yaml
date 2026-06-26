@@ -1,0 +1,30 @@
+# Render Blueprint — deploys ChatApp as one web service.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: chatapp
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true   # Render generates a strong secret for you
+      - key: NODE_VERSION
+        value: 20.18.0
+
+    # --- Persistent storage (OPTIONAL) ----------------------------------------
+    # The free plan uses an EPHEMERAL filesystem: the JSON DB and uploads reset
+    # on every deploy/restart. That's fine for a demo. To keep data permanently,
+    # upgrade off the free plan and uncomment the disk + the two env vars below.
+    #
+    #   - key: DATA_DIR
+    #     value: /data
+    #   - key: UPLOAD_DIR
+    #     value: /data/uploads
+    #
+    # disk:
+    #   name: chatapp-data
+    #   mountPath: /data
+    #   sizeGB: 1

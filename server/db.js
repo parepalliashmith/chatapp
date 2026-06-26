@@ -88,4 +88,9 @@ export function saveNow() {
   persist();
 }
 
+// 'postgres' (persistent) or 'file' (ephemeral) — surfaced on /api/health.
+export function storageMode() {
+  return usePg ? 'postgres' : 'file';
+}
+
 export default db;

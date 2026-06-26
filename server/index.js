@@ -23,6 +23,12 @@ const io = new Server(server, { cors: { origin: '*' }, maxHttpBufferSize: 1e7 })
 app.use(cors());
 app.use(express.json({ limit: '12mb' }));
 
+// Allow this app to use the camera & microphone (for WebRTC calls).
+app.use((_req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), display-capture=(self)');
+  next();
+});
+
 // ---------- uploads ----------
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });

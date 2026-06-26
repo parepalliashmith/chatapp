@@ -15,7 +15,8 @@
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); try { $h = Invoke-RestMethod http://localhost:4000/api/health -TimeoutSec 5; \"API health: $\\($h | ConvertTo-Json -Compress\\)\" } catch { \"API not ready: $\\($_.Exception.Message\\)\" }; try { $c = Invoke-WebRequest http://localhost:5173 -TimeoutSec 5 -UseBasicParsing; \"Client HTTP: $\\($c.StatusCode\\)\" } catch { \"Client not ready: $\\($_.Exception.Message\\)\" })",
       "mcp__Claude_Preview__preview_start",
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"D:\\\\PROJECT 1\"; npm run build 2>&1 | Select-Object -Last 25)",
-      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); $env:PORT=\"4000\"; Set-Location \"D:\\\\PROJECT 1\"; npm start 2>&1)"
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); $env:PORT=\"4000\"; Set-Location \"D:\\\\PROJECT 1\"; npm start 2>&1)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"D:\\\\PROJECT 1\"; npm --prefix client run build 2>&1 | Select-Object -Last 6)"
     ]
   }
 }

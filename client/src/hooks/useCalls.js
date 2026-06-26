@@ -8,6 +8,23 @@ const RTC_CONFIG = {
   ],
 };
 
+// Turn a getUserMedia error into a friendly, actionable message.
+function mediaErrorMessage(err, wantVideo) {
+  const device = wantVideo ? 'camera and microphone' : 'microphone';
+  switch (err?.name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return `Permission to use your ${device} was blocked. Click the 🔒/camera icon in your browser's address bar and allow access, then try again.`;
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return `No ${device} was found on this device.`;
+    case 'NotReadableError':
+      return `Your ${device} is already in use by another app. Close it and try again.`;
+    default:
+      return `Could not access your ${device}: ${err?.message || 'unknown error'}`;
+  }
+}
+
 // Encapsulates 1-to-1 WebRTC calls (voice & video) with Socket.IO signaling.
 export function useCalls() {
   const [call, setCall] = useState({ status: 'idle' }); // idle | calling | incoming | connected
@@ -47,8 +64,20 @@ export function useCalls() {
     return pc;
   }, []);
 
+  // Request camera/microphone access. This is what pops the browser's
+  // "Allow access?" permission prompt. We map failures to clear messages.
   async function getMedia(wantVideo) {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantVideo });
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error(
+        'Camera/microphone need a secure connection. Open the app on https:// or http://localhost.'
+      );
+    }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantVideo });
+    } catch (err) {
+      throw new Error(mediaErrorMessage(err, wantVideo));
+    }
     localStreamRef.current = stream;
     setLocalStream(stream);
     return stream;

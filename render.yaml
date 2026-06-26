@@ -1,5 +1,12 @@
-# Render Blueprint — deploys ChatApp as one web service.
+# Render Blueprint — deploys ChatApp as one web service + a free Postgres DB.
 # Docs: https://render.com/docs/blueprint-spec
+
+databases:
+  - name: chatapp-db
+    plan: free
+    databaseName: chatapp
+    user: chatapp
+
 services:
   - type: web
     name: chatapp
@@ -13,6 +20,10 @@ services:
         generateValue: true   # Render generates a strong secret for you
       - key: NODE_VERSION
         value: 20.18.0
+      - key: DATABASE_URL      # persistent storage — survives redeploys
+        fromDatabase:
+          name: chatapp-db
+          property: connectionString
 
     # --- Persistent storage (OPTIONAL) ----------------------------------------
     # The free plan uses an EPHEMERAL filesystem: the JSON DB and uploads reset

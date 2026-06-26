@@ -10,7 +10,7 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import { nanoid } from 'nanoid';
 
-import db, { save } from './db.js';
+import db, { save, initDb } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 4000;
@@ -408,7 +408,10 @@ if (fs.existsSync(CLIENT_DIST)) {
   console.log('  Serving built client from client/dist');
 }
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n  ChatApp server running on http://localhost:${PORT}`);
-  console.log(`  (also reachable on your LAN IP at port ${PORT} for phone testing)\n`);
+// Load persisted state, then start accepting connections.
+initDb().then(() => {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n  ChatApp server running on http://localhost:${PORT}`);
+    console.log(`  (also reachable on your LAN IP at port ${PORT} for phone testing)\n`);
+  });
 });

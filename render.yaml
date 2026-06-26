@@ -24,7 +24,9 @@ services:
         fromDatabase:
           name: chatapp-db
           property: connectionString
-      - key: OPENAI_API_KEY    # for ✨ Ghibli art; set the value in the Render dashboard
+      - key: GEMINI_API_KEY    # for ✨ Ghibli art (free Google AI Studio key); set value in dashboard
+        sync: false
+      - key: OPENAI_API_KEY    # optional paid fallback for ✨ Ghibli art
         sync: false
 
     # --- Persistent storage (OPTIONAL) ----------------------------------------

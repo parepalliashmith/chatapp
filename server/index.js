@@ -45,6 +45,7 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 // In-memory upload for images we forward straight to the OpenAI image API.
 const memUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 // ---------- helpers ----------
 function publicUser(u) {
@@ -244,49 +245,79 @@ app.post('/api/upload', authMiddleware, upload.single('file'), (req, res) => {
   });
 });
 
-// Is the Ghibli feature available (i.e. is an API key configured)?
+const GHIBLI_PROMPT =
+  'Redraw this photo as a beautiful Studio Ghibli style anime illustration: soft hand-painted ' +
+  'watercolor textures, warm cinematic lighting, lush detailed painterly background, gentle ' +
+  'expressive features, whimsical and nostalgic mood. Preserve the subject, pose and composition.';
+
+// --- Google Gemini (free tier) image editing ---
+async function ghibliWithGemini(buffer, mimeType) {
+  const url =
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=' +
+    GEMINI_API_KEY;
+  const body = {
+    contents: [
+      {
+        parts: [
+          { text: GHIBLI_PROMPT },
+          { inline_data: { mime_type: mimeType || 'image/png', data: buffer.toString('base64') } },
+        ],
+      },
+    ],
+  };
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data?.error?.message || `Gemini failed (${r.status})`);
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  const inline = parts.map((p) => p.inlineData || p.inline_data).find((x) => x && x.data);
+  if (!inline) throw new Error('Gemini did not return an image (try a clearer photo).');
+  return Buffer.from(inline.data, 'base64');
+}
+
+// --- OpenAI gpt-image-1 (paid) image editing ---
+async function ghibliWithOpenAI(buffer, mimeType) {
+  const form = new FormData();
+  form.append('model', 'gpt-image-1');
+  form.append('image', new Blob([buffer], { type: mimeType || 'image/png' }), 'input.png');
+  form.append('prompt', GHIBLI_PROMPT);
+  form.append('size', '1024x1024');
+  const r = await fetch('https://api.openai.com/v1/images/edits', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+    body: form,
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data?.error?.message || `Image generation failed (${r.status})`);
+  const b64 = data?.data?.[0]?.b64_json;
+  if (!b64) throw new Error('No image was returned.');
+  return Buffer.from(b64, 'base64');
+}
+
+// Is the Ghibli feature available (i.e. is any image-AI key configured)?
 app.get('/api/ghibli/status', authMiddleware, (_req, res) => {
-  res.json({ enabled: !!OPENAI_API_KEY });
+  res.json({ enabled: !!(GEMINI_API_KEY || OPENAI_API_KEY) });
 });
 
-// Turn an uploaded photo into Studio Ghibli–style art via OpenAI gpt-image-1.
+// Turn an uploaded photo into Studio Ghibli–style art.
+// Prefers Google Gemini (free) and falls back to OpenAI if only that key is set.
 app.post('/api/ghibli', authMiddleware, memUpload.single('image'), async (req, res) => {
-  if (!OPENAI_API_KEY) {
-    return res.status(503).json({ error: 'Ghibli art is not configured yet — set OPENAI_API_KEY on the server.' });
+  if (!GEMINI_API_KEY && !OPENAI_API_KEY) {
+    return res.status(503).json({ error: 'Ghibli art is not configured yet — set GEMINI_API_KEY on the server.' });
   }
   if (!req.file) return res.status(400).json({ error: 'Please choose a photo first.' });
-
-  const prompt =
-    'Redraw this photo as a beautiful Studio Ghibli style anime illustration: soft hand-painted ' +
-    'watercolor textures, warm cinematic lighting, lush detailed painterly background, gentle ' +
-    'expressive features, whimsical and nostalgic mood. Preserve the subject, pose and composition.';
-
   try {
-    const form = new FormData();
-    form.append('model', 'gpt-image-1');
-    form.append('image', new Blob([req.file.buffer], { type: req.file.mimetype || 'image/png' }), 'input.png');
-    form.append('prompt', prompt);
-    form.append('size', '1024x1024');
-
-    const r = await fetch('https://api.openai.com/v1/images/edits', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-      body: form,
-    });
-    const data = await r.json();
-    if (!r.ok) {
-      const msg = data?.error?.message || `Image generation failed (${r.status})`;
-      return res.status(502).json({ error: msg });
-    }
-    const b64 = data?.data?.[0]?.b64_json;
-    if (!b64) return res.status(502).json({ error: 'No image was returned.' });
-
-    const buf = Buffer.from(b64, 'base64');
+    const buf = GEMINI_API_KEY
+      ? await ghibliWithGemini(req.file.buffer, req.file.mimetype)
+      : await ghibliWithOpenAI(req.file.buffer, req.file.mimetype);
     const filename = `ghibli-${Date.now()}-${nanoid(8)}.png`;
     fs.writeFileSync(path.join(UPLOAD_DIR, filename), buf);
     res.json({ url: `/uploads/${filename}`, name: 'ghibli-art.png', mime: 'image/png', size: buf.length, kind: 'image' });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(502).json({ error: e.message });
   }
 });
 

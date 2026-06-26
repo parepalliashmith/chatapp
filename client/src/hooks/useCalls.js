@@ -5,6 +5,11 @@ const RTC_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    // Free public TURN relays — needed when peers are on different networks
+    // (e.g. home Wi-Fi <-> mobile data) and a direct connection can't form.
+    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
   ],
 };
 
@@ -64,22 +69,44 @@ export function useCalls() {
     return pc;
   }, []);
 
-  // Request camera/microphone access. This is what pops the browser's
-  // "Allow access?" permission prompt. We map failures to clear messages.
-  async function getMedia(wantVideo) {
+  // Acquire mic/camera and wire the tracks onto the peer connection.
+  // - Pops the browser permission prompt.
+  // - Falls back to audio-only when no camera exists, so a laptop without a
+  //   webcam can still join a video call and SEE/HEAR the other person.
+  // - As the caller, adds a recv-only video lane when we have no camera, so the
+  //   other side's video can still reach us.
+  async function setupLocalMedia(pc, callType, isCaller) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error(
         'Camera/microphone need a secure connection. Open the app on https:// or http://localhost.'
       );
     }
+    const wantVideo = callType === 'video';
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantVideo });
     } catch (err) {
-      throw new Error(mediaErrorMessage(err, wantVideo));
+      // Device-missing/busy problems → retry audio-only. Permission denials are real errors.
+      const recoverable = ['NotFoundError', 'NotReadableError', 'OverconstrainedError'];
+      if (wantVideo && recoverable.includes(err?.name)) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        } catch (err2) {
+          throw new Error(mediaErrorMessage(err2, false));
+        }
+      } else {
+        throw new Error(mediaErrorMessage(err, wantVideo));
+      }
     }
+
     localStreamRef.current = stream;
     setLocalStream(stream);
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+
+    // Video call but no local camera: still negotiate a lane to RECEIVE video.
+    if (isCaller && wantVideo && stream.getVideoTracks().length === 0) {
+      try { pc.addTransceiver('video', { direction: 'recvonly' }); } catch { /* ignore */ }
+    }
     return stream;
   }
 
@@ -87,8 +114,7 @@ export function useCalls() {
     try {
       setCall({ status: 'calling', peer, callType, conversationId });
       const pc = createPc(peer.id);
-      const stream = await getMedia(callType === 'video');
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+      await setupLocalMedia(pc, callType, true);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       getSocket()?.emit('call:offer', { to: peer.id, offer, callType, conversationId });
@@ -103,9 +129,11 @@ export function useCalls() {
     if (c.status !== 'incoming') return;
     try {
       const pc = createPc(c.peer.id);
-      const stream = await getMedia(c.callType === 'video');
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+      // Apply the caller's offer first so our local tracks attach to the
+      // already-negotiated audio/video lanes (this is what makes our video
+      // reach the caller even if the caller has no camera).
       await pc.setRemoteDescription(new RTCSessionDescription(c.offer));
+      await setupLocalMedia(pc, c.callType, false);
       for (const cand of pendingIce.current) {
         try { await pc.addIceCandidate(cand); } catch { /* ignore */ }
       }

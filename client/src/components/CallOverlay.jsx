@@ -19,6 +19,7 @@ export default function CallOverlay({ call, localStream, remoteStream, onAccept,
 
   if (call.status === 'idle') return null;
   const isVideo = call.callType === 'video';
+  const hasLocalVideo = !!localStream && localStream.getVideoTracks().length > 0;
 
   function toggleMute() {
     const next = !muted;
@@ -56,7 +57,11 @@ export default function CallOverlay({ call, localStream, remoteStream, onAccept,
         {isVideo ? (
           <>
             <video ref={remoteVideoRef} className="remote-video" autoPlay playsInline />
-            <video ref={localVideoRef} className="local-video" autoPlay playsInline muted />
+            {hasLocalVideo ? (
+              <video ref={localVideoRef} className="local-video" autoPlay playsInline muted />
+            ) : (
+              <div className="local-video no-cam">No camera</div>
+            )}
             <div className="call-overlay-top">
               <span className="call-peer-name">{call.peer.username}</span>
               <span className="call-status-text">{call.status === 'calling' ? 'Calling…' : 'Connected'}</span>

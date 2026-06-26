@@ -16,7 +16,8 @@
       "mcp__Claude_Preview__preview_start",
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"D:\\\\PROJECT 1\"; npm run build 2>&1 | Select-Object -Last 25)",
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); $env:PORT=\"4000\"; Set-Location \"D:\\\\PROJECT 1\"; npm start 2>&1)",
-      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"D:\\\\PROJECT 1\"; npm --prefix client run build 2>&1 | Select-Object -Last 6)"
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"D:\\\\PROJECT 1\"; npm --prefix client run build 2>&1 | Select-Object -Last 6)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); Set-Location \"D:\\\\PROJECT 1\"; npm --prefix client run build 2>&1 | Select-Object -Last 5)"
     ]
   }
 }

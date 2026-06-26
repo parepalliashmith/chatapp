@@ -246,6 +246,17 @@ a { color: var(--accent); cursor: pointer; text-decoration: none; }
 .search-time { float: right; font-size: 11px; color: var(--text-dim); font-weight: 400; }
 mark { background: var(--accent); color: #03110d; border-radius: 3px; padding: 0 2px; }
 
+/* ---------- camera test (profile) ---------- */
+.cam-test { margin-top: 8px; }
+.cam-hint { margin: 0 0 10px; font-size: 13px; color: var(--text-dim); }
+.cam-preview {
+  width: 100%; max-height: 240px; border-radius: 12px; background: #000;
+  object-fit: cover; transform: scaleX(-1); display: block;
+}
+.cam-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.cam-ok { font-size: 13px; color: #31cd5e; }
+.btn-ghost.slim { margin-top: 0; padding: 8px 14px; color: var(--text); }
+
 /* ---------- call overlay ---------- */
 .call-overlay {
   position: fixed; inset: 0; background: rgba(6,12,16,.94); z-index: 100;
